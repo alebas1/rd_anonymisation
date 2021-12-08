@@ -1,0 +1,1 @@
+regex = r'(client|monsieur|madame|mademoiselle|m|mr|mme|mlle|mle|rue|boulevard|avenue|all(é|e)e|place|impasse)(\.|\:)?$'
