@@ -7,7 +7,7 @@ import pytesseract
 
 
 
-def get_text_data(image_data):
+def extract_text_data(image_data):
     text_boxes_arr = []
 
     # find customer box
@@ -25,11 +25,20 @@ def get_text_data(image_data):
 
     return text_boxes_arr
 
+
+def check_regex(text_boxes_arr):
+    for t in text_boxes_arr:
+        if re.search(r'()', t['text']):
+            valid_text_boxes_arr.append(t)
+    return valid_text_boxes_arr
+
+
 if __name__ == '__main__':
-    filename = 'image.jpg'
+    filename = 'factures/midas.jpg'
 
     image = cv2.imread(filename)
 
+    # print(pytesseract.image_to_string(image))
     image_data = pytesseract.image_to_data(image)
     print(image_data)
 
