@@ -36,7 +36,8 @@ def check_regex(text_boxes_arr):
 
 def anonymize_text(img, boxes):
     for b in boxes:
-        cv2.rectangle(img, b.left, b.top), (b.left + b.width, b.top + b.height), (0, 0, 0), -1)
+        cv2.rectangle(img, (b["left"], b["top"]), (b["left"] + b["width"], b["top"] + b["height"]), (0, 0, 0), -1)
+    cv2.imwrite('./image_output.jpg', img)
 
 
 if __name__ == '__main__':
