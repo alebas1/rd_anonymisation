@@ -43,14 +43,14 @@ def anonymize_text(img, ano_boxes, boxes):
 
         #looking forward
         i=b["index"]
-        while((boxes[i+1]["left"]<=(boxes[i]["left"]+boxes[i]["width"])+20) and (boxes[i+1]["top"]==boxes[i]["top"])):
+        while((boxes[i+1]["left"]<=(boxes[i]["left"]+boxes[i]["width"])+20) and (boxes[i+1]["top"]>=boxes[i]["top"]-5 or boxes[i+1]["top"]<=boxes[i]["top"]+5)):
             tmp=boxes[i+1]
             cv2.rectangle(img, (tmp["left"], tmp["top"]), (tmp["left"] + tmp["width"], tmp["top"] + tmp["height"]), (0, 0, 0), -1)
             i+=1
 
         #looking backward
         i=b["index"]
-        while((boxes[i-1]["left"]<=(boxes[i]["left"]+boxes[i]["width"])+20) and (boxes[i-1]["top"]==boxes[i]["top"])):
+        while((boxes[i-1]["left"]<=(boxes[i]["left"]+boxes[i]["width"])+20) and (boxes[i+1]["top"]>=boxes[i]["top"]-5 or boxes[i+1]["top"]<=boxes[i]["top"]+5)):
             tmp=boxes[i-1]
             cv2.rectangle(img, (tmp["left"], tmp["top"]), (tmp["left"] + tmp["width"], tmp["top"] + tmp["height"]), (0, 0, 0), -1)
             i-=1
@@ -59,7 +59,9 @@ def anonymize_text(img, ano_boxes, boxes):
 
 
 if __name__ == '__main__':
-    filename = 'factures/midas.jpg'
+
+    #filename = 'factures/midas.jpg'
+    filename = 'factures/invoice9.jpg'
 
     image = cv2.imread(filename)
 
@@ -68,8 +70,10 @@ if __name__ == '__main__':
 
     # print(extract_text_data(image_data))
     text_data = extract_text_data(image_data)
-    #for s in text_data:
-    #    print(s)
+    for s in text_data:
+        print(s)
     valid_ano = check_regex(text_data)
+    #for s in valid_ano:
+    #    print(s)
 
     anonymize_text(image, valid_ano, text_data)

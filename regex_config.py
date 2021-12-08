@@ -1,1 +1,1 @@
-regex = r'(client|monsieur|madame|mademoiselle|m|mr|mme|mlle|mle|rue|boulevard|avenue|all(é|e)e|place|impasse)(\.|\:)?$'
+regex = r'(client|monsieur|madame|mademoiselle|m|mr|mme|mlle|mle|rue|boulevard|bld|avenue|all(é|e)e|place|impasse)(\.|\:)?$'
