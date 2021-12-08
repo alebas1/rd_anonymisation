@@ -5,9 +5,9 @@ import re
 import cv2
 import pytesseract
 
+import regex_config
 
-
-def get_text_data(image_data):
+def extract_text_data(image_data):
     text_boxes_arr = []
 
     # find customer box
@@ -25,12 +25,29 @@ def get_text_data(image_data):
 
     return text_boxes_arr
 
+
+def check_regex(text_boxes_arr):
+    valid_text_boxes_arr = []
+    for t in text_boxes_arr:
+        if re.match(regex_config.regex, t['text'], re.IGNORECASE):
+            valid_text_boxes_arr.append(t)
+    return valid_text_boxes_arr
+
+
+def anonymize_text(img, boxes):
+    for b in boxes:
+        cv2.rectangle(img, b.left, b.top), (b.left + b.width, b.top + b.height), (0, 0, 0), -1)
+
+
 if __name__ == '__main__':
-    filename = 'image.jpg'
+    filename = 'factures/midas.jpg'
 
     image = cv2.imread(filename)
 
+    # print(pytesseract.image_to_string(image))
     image_data = pytesseract.image_to_data(image)
-    print(image_data)
 
-    print(get_text_data(image_data))
+    # print(extract_text_data(image_data))
+    valid_ano = check_regex(extract_text_data(image_data))
+
+    anonymize_text(image, valid_ano)
