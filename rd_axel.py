@@ -36,21 +36,20 @@ def check_regex(text_boxes_arr):
             valid_text_boxes_arr.append(t)
     return valid_text_boxes_arr
 
-
 def anonymize_text(img, ano_boxes, boxes):
     for b in ano_boxes:
         cv2.rectangle(img, (b["left"], b["top"]), (b["left"] + b["width"], b["top"] + b["height"]), (0, 0, 0), -1)
 
         #looking forward
         i=b["index"]
-        while((boxes[i+1]["left"]<=(boxes[i]["left"]+boxes[i]["width"])+20) and (boxes[i+1]["top"]>=boxes[i]["top"]-5 or boxes[i+1]["top"]<=boxes[i]["top"]+5)):
+        while(check_forward(boxes[i], boxes[i+1], i) and check_align(boxes[i], boxes[i+1], i)):
             tmp=boxes[i+1]
             cv2.rectangle(img, (tmp["left"], tmp["top"]), (tmp["left"] + tmp["width"], tmp["top"] + tmp["height"]), (0, 0, 0), -1)
             i+=1
 
         #looking backward
         i=b["index"]
-        while((boxes[i-1]["left"]<=(boxes[i]["left"]+boxes[i]["width"])+20) and (boxes[i+1]["top"]>=boxes[i]["top"]-5 or boxes[i+1]["top"]<=boxes[i]["top"]+5)):
+        while(check_backward(boxes[i], boxes[i-1], i) and check_align(boxes[i], boxes[i-1], i)):
             tmp=boxes[i-1]
             cv2.rectangle(img, (tmp["left"], tmp["top"]), (tmp["left"] + tmp["width"], tmp["top"] + tmp["height"]), (0, 0, 0), -1)
             i-=1
@@ -58,10 +57,20 @@ def anonymize_text(img, ano_boxes, boxes):
     cv2.imwrite('./image_output.jpg', img)
 
 
+def check_forward(box_curr, box_next, i):
+    return (box_next["left"] <= (box_curr["left"] + box_curr["width"]) + 20)
+
+def check_backward(box_curr, box_prev, i):
+    return (box_prev["left"]+box_prev["width"] >= box_curr["left"] - 20)
+
+def check_align(box_curr, box_next, i):
+    return (box_next["top"] >= box_curr["top"] - 5 or box_next["top"] <= box_curr["top"] + 5)
+
+
 if __name__ == '__main__':
 
     #filename = 'factures/midas.jpg'
-    filename = 'factures/invoice9.jpg'
+    filename = 'factures/midas.jpg'
 
     image = cv2.imread(filename)
 
