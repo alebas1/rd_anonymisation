@@ -5,40 +5,84 @@ import re
 import cv2
 import pytesseract
 
-filename = 'image.jpg'
+import regex_config
 
-#* read the image and get the dimensions
-img = cv2.imread(filename)
-hImg, wImg, _ = img.shape
+def extract_text_data(image_data):
+    text_boxes_arr = []
 
-#* get the data from the image
-boxes = pytesseract.image_to_data(img)
-# print(boxes)
+    # find customer box
+    index=0
+    for x, b in enumerate(image_data.splitlines()):
+        if x != 0:
+            b = b.split()
+            if len(b) == 12:
+                text_boxes_arr.append({
+                    'left': int(b[6]),
+                    'top': int(b[7]),
+                    'width': int(b[8]),
+                    'height': int(b[9]),
+                    'text': b[11],
+                    'index': index
+                })
+                index+=1
 
-#* create a list of text boxes
-text_boxes_arr = []
-for x, b in enumerate(boxes.splitlines()):
-    if x != 0: # removing the legend line
-        b = b.split() # tab separated
-        if len(b) == 12: # get boxes with text only
-            print(b)
-            text_boxes_arr.append(b)
-            #* Get the customer box
-            if re.compile(r"(customer|client)", re.IGNORECASE).search(b[11]):
-                customer_box = b
+    return text_boxes_arr
 
-#* get the boxes on the same line as the customer box
-customerline_box_arr = []
-for b in text_boxes_arr:
-    if b[7] == customer_box[7]:
-        customerline_box_arr.append(b)
 
-#* get the box that is the farthest to the right
-maxleft_customerline_box = max(map(lambda i: int(i[6]), customerline_box_arr))
+def check_regex(text_boxes_arr):
+    valid_text_boxes_arr = []
+    for t in text_boxes_arr:
+        if re.match(regex_config.regex, t['text'], re.IGNORECASE):
+            valid_text_boxes_arr.append(t)
+    return valid_text_boxes_arr
 
-#* hide the customer line
-cv2.rectangle(img, (int(customer_box[6]), int(customer_box[7])), (int(customer_box[6]) + maxleft_customerline_box, int(customer_box[7]) + int(customer_box[9])), (0, 0, 0), -1)
+def anonymize_text(img, ano_boxes, boxes):
+    for b in ano_boxes:
+        cv2.rectangle(img, (b["left"], b["top"]), (b["left"] + b["width"], b["top"] + b["height"]), (0, 0, 0), -1)
 
-#* show the output image
-cv2.imwrite('./image_output.jpg', img)
-print("Image saved to ./image_output.jpg")
+        #looking forward
+        i=b["index"]
+        while(check_forward(boxes[i], boxes[i+1], i) and check_align(boxes[i], boxes[i+1], i)):
+            tmp=boxes[i+1]
+            cv2.rectangle(img, (tmp["left"], tmp["top"]), (tmp["left"] + tmp["width"], tmp["top"] + tmp["height"]), (0, 0, 0), -1)
+            i+=1
+
+        #looking backward
+        i=b["index"]
+        while(check_backward(boxes[i], boxes[i-1], i) and check_align(boxes[i], boxes[i-1], i)):
+            tmp=boxes[i-1]
+            cv2.rectangle(img, (tmp["left"], tmp["top"]), (tmp["left"] + tmp["width"], tmp["top"] + tmp["height"]), (0, 0, 0), -1)
+            i-=1
+
+    cv2.imwrite('./image_output.jpg', img)
+
+
+def check_forward(box_curr, box_next, i):
+    return (box_next["left"] <= (box_curr["left"] + box_curr["width"]) + 20)
+
+def check_backward(box_curr, box_prev, i):
+    return (box_prev["left"]+box_prev["width"] >= box_curr["left"] - 20)
+
+def check_align(box_curr, box_next, i):
+    return (box_next["top"] >= box_curr["top"] - 5 or box_next["top"] <= box_curr["top"] + 5)
+
+
+if __name__ == '__main__':
+
+    #filename = 'factures/midas.jpg'
+    filename = 'factures/midas.jpg'
+
+    image = cv2.imread(filename)
+
+    # print(pytesseract.image_to_string(image))
+    image_data = pytesseract.image_to_data(image)
+
+    # print(extract_text_data(image_data))
+    text_data = extract_text_data(image_data)
+    for s in text_data:
+        print(s)
+    valid_ano = check_regex(text_data)
+    #for s in valid_ano:
+    #    print(s)
+
+    anonymize_text(image, valid_ano, text_data)
