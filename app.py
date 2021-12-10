@@ -43,14 +43,18 @@ def anonymize_text(img, ano_boxes, boxes):
     for b in ano_boxes:
         cv2.rectangle(img, (b['left'], b['top']), (b['left'] + b['width'
                       ], b['top'] + b['height']), (0, 0, 0), -1)
-
         # looking forward
         i = b['index']
+
+        # print("box to anonymise:", b)
         while check_word_forward(boxes[i], boxes[i + 1], i) \
             and check_word_aligned(boxes[i], boxes[i + 1], i):
             box_next = boxes[i + 1]
             draw_anonymizing_rectangle(img, box_next)
-            i += 1
+            i += 1 
+            # print(box_next)
+            # print("check_word_forward:", check_word_forward(boxes[i], boxes[i + 1], i))
+            # print('check_word_aligned:', check_word_aligned(boxes[i], boxes[i + 1], i))
 
         # looking backward
         i = b['index']
@@ -70,15 +74,17 @@ def draw_anonymizing_rectangle(img, box):
 
 
 def check_word_forward(box_curr, box_next, i):
-    return box_next['left'] <= box_curr['left'] + box_curr['width'] + 20
+    return box_next['left'] <= box_curr['left'] + box_curr['width'] + 20 \
+        and box_next['left'] >= box_curr['left'] + box_curr['width']
 
 
 def check_word_backward(box_curr, box_prev, i):
-    return box_prev['left'] + box_prev['width'] >= box_curr['left'] - 20
+    return box_prev['left'] + box_prev['width'] >= box_curr['left'] - 20 \
+        and box_prev['left'] + box_prev['width'] <= box_curr['left']
 
 
 def check_word_aligned(box_curr, box_next, i):
-    return box_next['top'] >= box_curr['top'] - 5 or box_next['top'] \
+    return box_next['top'] >= box_curr['top'] - 5 and box_next['top'] \
         <= box_curr['top'] + 5
 
 
