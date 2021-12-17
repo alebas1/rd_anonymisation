@@ -2,6 +2,8 @@
 
 # regex
 import re
+import sys
+from PIL import Image
 
 # image + ocr
 import cv2
@@ -66,6 +68,27 @@ def anonymize_text(img, ano_boxes, boxes):
     for b in ano_boxes:
         cv2.rectangle(img, (b['left'], b['top']), (b['left'] + b['width'
                       ], b['top'] + b['height']), (0, 0, 0), -1)
+        i = b['index']
+
+        while check_word_forward(boxes[i], boxes[i + 1]) \
+            and check_word_aligned(boxes[i], boxes[i + 1]):
+            box_next = boxes[i + 1]
+            draw_anonymizing_rectangle(img, box_next)
+            i += 1 
+
+        i = b['index']
+        while check_word_backward(boxes[i], boxes[i - 1]) \
+            and check_word_aligned(boxes[i], boxes[i - 1]):
+            box_prev = boxes[i - 1]
+            draw_anonymizing_rectangle(img, box_prev)
+            i -= 1
+
+    cv2.imwrite('./resultat/2image_outputLigne.jpg', img)   
+
+def anonymize_textBlock(img, ano_boxes, boxes):
+    for b in ano_boxes:
+        cv2.rectangle(img, (b['left'], b['top']), (b['left'] + b['width'
+                      ], b['top'] + b['height']), (0, 0, 0), -1)
         # looking forward
         b = b['index']
         
@@ -83,8 +106,7 @@ def anonymize_text(img, ano_boxes, boxes):
             draw_anonymizing_rectangle(img, box_prev)
             i += 1
 
-    cv2.imwrite('./image_output.jpg', img)
-
+    cv2.imwrite('./resultat/3image_outputBlock.jpg', img) 
 
 
 def anonymize_text_v2(img, ano_boxes, boxes):
@@ -109,8 +131,8 @@ def anonymize_text_v2(img, ano_boxes, boxes):
                 draw_anonymizing_rectangle(img, box_next)
 
             i += 1
-    cv2.imwrite('./image_output.jpg', img)
-
+    
+    cv2.imwrite('./resultat/4imageBlockKeep.jpg', img)
 
 def goEndKeepedData(boxe, boxes):
     rtn = boxe['index']
@@ -138,12 +160,12 @@ def check_word_forward(box_curr, box_next):
         and box_next['left'] >= box_curr['left'] + box_curr['width']
 
 
-def check_word_backward(box_curr, box_prev, i):
+def check_word_backward(box_curr, box_prev):
     return box_prev['left'] + box_prev['width'] >= box_curr['left'] - 20 \
         and box_prev['left'] + box_prev['width'] <= box_curr['left']
 
 
-def check_word_aligned(box_curr, box_next, i):
+def check_word_aligned(box_curr, box_next):
     return box_next['top'] >= box_curr['top'] - 5 and box_next['top'] \
         <= box_curr['top'] + 5
 
@@ -158,26 +180,25 @@ if __name__ == '__main__':
                     headers=headers,
                     data="image=@/home/vroy/Mobivia/Memoracar/rd_anonymisation/factures/invoice1.jpg")
     """
-    #filename = 'scanned_image.jpg'
-    filename = 'factures/midas.jpg'
+    filename = sys.argv[1]
+
+    #filename = 'factures/midas.jpg'
 
     image = cv2.imread(filename)
+
+    cv2.imwrite('./resultat/1imageOrigin.jpg',image)
 
     image_data = pytesseract.image_to_data(image)
     
     text_data = extract_text_data(image_data)
     text_data_pr = extract_text_data_bpl(image_data)
 
-
     valid_ano = check_regex(text_data, regex_config.regex)
+    imgtmp = image.copy()
+    anonymize_text(imgtmp, valid_ano, text_data)
+    imgtmp = image.copy()
+    anonymize_textBlock(imgtmp, valid_ano, text_data)
+    imgtmp = image.copy()
+    anonymize_text_v2(imgtmp, valid_ano, text_data)
 
-    #print(text_data)
 
-    anonymize_text_v2(image, valid_ano, text_data)
-
-    #print(text_data)
-    #print(pytesseract.run_and_get_output(image))
-    """
-    for s in text_data_pr:
-        print(s)
-    """
