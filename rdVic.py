@@ -117,7 +117,6 @@ def anonymize_textBlock_keepData(img, ano_boxes, boxes):
             while check_word_block(boxes[b], boxes[b + i]):
                 box_next = boxes[b + i]
                 if (re.search(regex_config.regexKepp, box_next['text'], re.IGNORECASE)):
-                    #print("ICI !!!!!!!!!!!!!!!!!!!!! :"+box_next)
                     i = go_end_keeped_data(box_next, boxes)
                 else:
                     draw_ano_rectangle(img, box_next)
@@ -183,7 +182,7 @@ def treatment(image):
 
     rtn = cv2.cvtColor(rtn, cv2.COLOR_BGR2GRAY)
 
-    rtn = cv2.threshold(rtn, 80, 255, cv2.THRESH_BINARY)[1]
+    rtn = cv2.threshold(rtn, 135, 255, cv2.THRESH_BINARY)[1]
 
     rtn = cv2.bitwise_not(rtn)
 
