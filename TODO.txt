@@ -1,0 +1,7 @@
+Check align en fonction de la taille du char (evit les problème d'align sur de petits char)
+
+Mettre les mots à ano dans des liste puis ensuite anonymisé les liste (permet de virer un des 2 blocs à analysé)
+
+Faire le traitement pour les fiches technique (regarder si dans le quart il est marqué fiche technique et si oui faire un traitement adapté)
+
+trouver pk le test below affiche pas le dernier mot de la ligne ? (semble pas génant mais peut etre l'origine de bug)
