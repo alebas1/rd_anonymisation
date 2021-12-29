@@ -1,7 +1,9 @@
-Check align en fonction de la taille du char (evit les problème d'align sur de petits char)
+Check align en fonction de la taille du char/taille image (evit les problème d'align sur de petits char)
 
-Mettre les mots à ano dans des liste puis ensuite anonymisé les liste (permet de virer un des 2 blocs à analysé)
+check forward en fonction de la taille de l'image (evite les problème sur les image à grand resolution)
 
 Faire le traitement pour les fiches technique (regarder si dans le quart il est marqué fiche technique et si oui faire un traitement adapté)
 
 trouver pk le test below affiche pas le dernier mot de la ligne ? (semble pas génant mais peut etre l'origine de bug)
+
+mettre un deuxiemme regex (qui sera pas en search mais l'autre, recherche exacte) pour les abréviation trop trompeuse (me, mme, bd, etc...)
