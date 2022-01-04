@@ -2,12 +2,14 @@
 
 # regex
 import re
+import sys
+import os
 
 # image + ocr
 import cv2
 import pytesseract
 
-import regex_config
+import rd_anonymisation.finalVersion.regex_config as regex_config
 
 
 def extract_text_data(image_data):
@@ -19,22 +21,22 @@ def extract_text_data(image_data):
             b = b.split()
             if len(b) == 12:
                 text_boxes_arr.append({
+                    'index': index,
                     'left': int(b[6]),
                     'top': int(b[7]),
                     'width': int(b[8]),
                     'height': int(b[9]),
                     'text': b[11],
-                    'index': index,
                     })
                 index += 1
 
     return text_boxes_arr
 
 
-def check_regex(text_boxes_arr):
+def check_regex(text_boxes_arr, img):
     valid_text_boxes_arr = []
     for t in text_boxes_arr:
-        if re.match(regex_config.regex, t['text'], re.IGNORECASE):
+        if re.search(regex_config.regex, t['text'], re.IGNORECASE) and t['top']<=img.shape[0]*0.33:
             valid_text_boxes_arr.append(t)
     return valid_text_boxes_arr
 
@@ -90,14 +92,18 @@ def check_word_aligned(box_curr, box_next, i):
 
 if __name__ == '__main__':
 
-    filename = 'factures/midas.jpg'
+    for i in range(1,len(sys.argv)):
 
-    image = cv2.imread(filename)
+        image = cv2.imread(sys.argv[i])
+        file_name = os.path.basename(sys.argv[i])[:-4]
 
-    image_data = pytesseract.image_to_data(image)
+        image_data = pytesseract.image_to_data(image)
 
-    text_data = extract_text_data(image_data)
+        text_data = extract_text_data(image_data)
 
-    valid_ano = check_regex(text_data)
+        valid_ano = check_regex(text_data, image)
 
-    anonymize_text(image, valid_ano, text_data)
+        for s in valid_ano:
+            print(s)
+
+    #anonymize_text(image, valid_ano, text_data)
