@@ -34,22 +34,24 @@ def extract_text_data(image_data):
 
 
 def check_regex(text_boxes_arr, img):
-    blocks_to_add = []
+    #blocks_to_add = []
     valid_text_boxes_arr = []
     for t in text_boxes_arr:
-        if re.search(regex_config.regexControleTechHeaders, t['text'], re.IGNORECASE):
-            blocks_to_add.append(t['block_number'])
+        print(t)
+        if re.search(regex_config.regexControleTechHeaders, t['text'], re.IGNORECASE) and t['top'] <= img.shape[0] * 0.33:
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            valid_text_boxes_arr.append(t)
+            #blocks_to_add.append(t['block_number'])
 
-    for block_number in blocks_to_add:
-        for t in text_boxes_arr:
-            if t['block_number'] == block_number:
-                valid_text_boxes_arr.append(t)    
+    # for block_number in blocks_to_add:
+    #     for t in text_boxes_arr:
+    #         if t['block_number'] == block_number:
+    #             valid_text_boxes_arr.append(t)    
 
     return valid_text_boxes_arr
 
 
 def anonymize_list(list_ano,img):
-    print('!!!!!!!!!!!!!!!!!!!list_ano', list_ano)
     i=0
     for b in list_ano: # la premiere list contenant la list avec le dict ou tous les champs sont à None
         i+=1
@@ -72,9 +74,7 @@ def generateImg(image, file_name):
 
     valid_ano = check_regex(text_data, image)
 
-    print('valid_ano', valid_ano)
-    # print(image_data)
-    #for s in text_data:
+    # for s in text_data:
     #        print(s)
 
     cv2.imwrite(RESULT_PATH  + file_name + '_2ano.jpg', anonymize_list(valid_ano, image))
@@ -82,7 +82,7 @@ def generateImg(image, file_name):
 if __name__ == '__main__':
 
     # setting up result path
-    RESULT_PATH = './resultatV2/'
+    RESULT_PATH = './resultatCT/'
 
     for i in range(1,len(sys.argv)):
 

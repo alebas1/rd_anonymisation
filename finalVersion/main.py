@@ -20,7 +20,7 @@ avec l'image original plus l'image anonymisé
 if __name__ == '__main__':
 
     # setting up result path
-    RESULT_PATH = './resultatV2/'
+    RESULT_PATH = './resultatVF/'
 
     startParam=1
 

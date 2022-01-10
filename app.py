@@ -9,7 +9,7 @@ import os
 import cv2
 import pytesseract
 
-import rd_anonymisation.finalVersion.regex_config as regex_config
+import regex_config
 
 
 def extract_text_data(image_data):
@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
         valid_ano = check_regex(text_data, image)
 
-        for s in valid_ano:
+        for s in text_data:
             print(s)
 
     #anonymize_text(image, valid_ano, text_data)
