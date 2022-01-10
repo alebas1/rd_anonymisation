@@ -2,4 +2,4 @@ regex = r'(monsieur|madame|mademoiselle|mr|mlle|mle|nom|prenom|rue|boulevard|bld
 
 regexKepp = r'(Kilometrage|Kilométrage|Km|kn|siret|Siret|SIRET|RC|immat|immatriculation|circulation|fax|SARL|garage|facture|Midas|renault|feu vert)'
 
-regexControleTechHeaders = r'(identification|installation|identité|titulaire|contrôle)'
+regexControleTechHeaders = r'(identification|identité|titulaire|contrôle)'
