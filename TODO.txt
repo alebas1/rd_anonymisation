@@ -7,3 +7,8 @@ Faire le traitement pour les fiches technique (regarder si dans le quart il est 
 trouver pk le test below affiche pas le dernier mot de la ligne ? (semble pas génant mais peut etre l'origine de bug)
 
 mettre un deuxiemme regex (qui sera pas en search mais l'autre, recherche exacte) pour les abréviation trop trompeuse (me, mme, bd, etc...)
+
+Une fois tous le traitement fait. Voir si il y a pas re le nom ou l'adresse dans la facture
+
+faire les option pour le main (option d'affichage des traces d'execution, option pour le fichier où ranger le resulta, option pour l'image original ou pas)
+    presque fait, indication en commentaire
