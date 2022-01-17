@@ -4,7 +4,7 @@ import os
 
 import cv2
 
-from rdDetectBlock import anonymizeImg
+from rdDetectBlock import generate_image_invoice
 
 """
 example : 
@@ -43,6 +43,6 @@ if __name__ == '__main__':
 
         print(file_name)
 
-        cv2.imwrite(RESULT_PATH + file_name + '_2ano.jpg', anonymizeImg(image))#, talkative
+        cv2.imwrite(RESULT_PATH + file_name + '_2ano.jpg', generate_image_invoice(image))
 
         print("================================================================================")

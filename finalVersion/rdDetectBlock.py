@@ -1,17 +1,12 @@
 from __future__ import annotations #for typing
 
-import sys
 from typing import Dict
-import cv2
 import numpy as np
 from operator import itemgetter
 
 import pytesseract
 
-from pytesseract.pytesseract import Output
-import os
-from anonymize_utils import check_word_aligned, check_word_backward, check_word_forward, isAtSameMarginAbove, isAtSameMarginBelow, isNotAtSameMarginAbove, isNotAtSameMarginBelow
-
+from anonymize_utils import anonymize_list, extract_text_data, check_word_aligned, check_word_backward, check_word_forward, isAtSameMarginAbove, isAtSameMarginBelow, isInList, isNotAtSameMarginAbove, isNotAtSameMarginBelow, searchRegex
 import regex_config as regex_config
 import re
 
@@ -21,7 +16,7 @@ def affType(arg):
     print(type(arg))
     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
-def anonymizeImg(image: np.ndarray) -> np.ndarray:  #, talkative:bool
+def generate_image_invoice(image: np.ndarray) -> np.ndarray:  #, talkative:bool
 
     #TALK=talkative
 
@@ -29,31 +24,9 @@ def anonymizeImg(image: np.ndarray) -> np.ndarray:  #, talkative:bool
     text_data = extract_text_data(image_data)
     valid_ano = check_regex(text_data, image)
 
-    # for s in text_data:
-    #        print(s)
-
-    return anonymize_text(image.copy(), valid_ano, text_data)
+    return anonymize_text(image, valid_ano, text_data)
 
 #depuis la data renvoyer par tesseract, on récupère seulement les champs qui nous intéresse
-def extract_text_data(image_data:str)->list[dict]:
-    text_boxes_arr = []
-
-    index = 0
-    for (x, b) in enumerate(image_data.splitlines()):
-        if x != 0:
-            b = b.split()
-            if len(b) == 12:
-                text_boxes_arr.append({
-                    'index': index,
-                    'left': int(b[6]),
-                    'top': int(b[7]),
-                    'width': int(b[8]),
-                    'height': int(b[9]),
-                    'text': b[11],
-                })
-                index += 1
-
-    return text_boxes_arr
 
 """
 depuis la data renvoyer par tesseract, on regarde si le texte colle a des regex d'utilisateur :
@@ -63,7 +36,7 @@ depuis la data renvoyer par tesseract, on regarde si le texte colle a des regex 
 def check_regex(text_boxes_arr: list[dict], img: np.ndarray) -> list[dict]:
     valid_text_boxes_arr = []
     for t in text_boxes_arr:
-        if re.search(regex_config.regex, t['text'], re.IGNORECASE) and t['top'] <= img.shape[0] * 0.33:
+        if searchRegex(regex_config.regex,t['text']) and t['top'] <= img.shape[0] * 0.33:
             valid_text_boxes_arr.append(t)
     return valid_text_boxes_arr
 
@@ -86,7 +59,10 @@ alog :
     trouve le bloc utilisateur et retire les autres des bloc à anonymiser
     anonymise tous les mots dans les blocs finaux
 """
-def anonymize_text(img: np.ndarray, ano_boxes:list[dict], boxes:list[dict])-> np.ndarray:
+def anonymize_text(image: np.ndarray, ano_boxes:list[dict], text_data:list[dict])-> np.ndarray:
+
+    cpImg = image.copy() 
+    
     #Ajoute une première list avec un dict vide, sinon le dict n'est pas initialisé correctement et on ne peut pas faire le premier check en regardant les bonnes keys
     lists_ano = [
         [
@@ -103,7 +79,7 @@ def anonymize_text(img: np.ndarray, ano_boxes:list[dict], boxes:list[dict])-> np
 
     for box_ano in ano_boxes:
         if(TALK):
-            print("|--------------------------------------------------------\npremier mot : " + str(boxes[box_ano['index']]))
+            print("|--------------------------------------------------------\npremier mot : " + str(text_data[box_ano['index']]))
         isIn = isInList(lists_ano,box_ano)
 
         if (isIn):
@@ -117,33 +93,24 @@ def anonymize_text(img: np.ndarray, ano_boxes:list[dict], boxes:list[dict])-> np
 
             # looking forward
             index_box_ano = box_ano['index']
-            anonymize_forward(boxes, index_box_ano, current_list_ano)
+            anonymize_forward(text_data, index_box_ano, current_list_ano)
 
             # looking backward
             index_box_ano = box_ano['index']
-            beginOfLine = anonymize_backward(boxes, index_box_ano, current_list_ano)
+            beginOfLine = anonymize_backward(text_data, index_box_ano, current_list_ano)
 
-            anonymize_block_below(img, boxes, beginOfLine, current_list_ano)
+            anonymize_block_below(text_data, beginOfLine, current_list_ano)
             if(TALK):
                 print('| ')
-            anonymize_block_above(img, boxes, beginOfLine, current_list_ano)
+            anonymize_block_above(text_data, beginOfLine, current_list_ano)
 
     lists_ano = lists_ano[1:] #pour enlever la première list avec une list de 1 dict vide
 
     checkBlock(lists_ano)
 
-    anonymize_list(lists_ano, img)
+    anonymize_list(lists_ano, cpImg)
 
-    return img
-
-#return true si la box_to_check se trouve deja dans une des list
-
-def isInList(list_ano:list[list[dict]],box_to_check:dict) -> bool:
-    rtn = False
-    for l in list_ano:
-        rtn = next((item for item in l if item['index'] == box_to_check['index']), False) != False or rtn
-        # or rtn permet de garder la valeur à true si elle l'as été une seul fois (évite l'utilisation d'un break)
-    return rtn
+    return cpImg
 
 #enleve des list la list qui ne sont pas des blocs utilisateur
 def checkBlock(lists_ano:list[list[dict]]) -> None:
@@ -159,86 +126,68 @@ def checkBlock(lists_ano:list[list[dict]]) -> None:
         index_of_list += 1
     pass
 
-
-def anonymize_list(lists_ano:list[list[dict]], img: np.ndarray) -> None:
-    index_to_print = 0
-    if(TALK):
-        print()
-    for list_boxes in lists_ano:
-        index_to_print += 1
-        for box in list_boxes:
-            if(TALK):
-                print("ano : " + str(index_to_print) + " | " + str(box))
-            draw_anonymizing_rectangle(img, box)
-    pass
-
-def draw_anonymizing_rectangle(img: np.ndarray, box: dict) -> None:
-    cv2.rectangle(img, (box['left'], box['top']), (box['left']
-                                                   + box['width'], box['top'] + box['height']), (0, 0,
-                                                                                                 0), -1)
-
 # recursif : anonymise la ligne d'en dessous si le premier mot est à la même marge que la ligne courante
-def anonymize_block_below(img: np.ndarray, boxes:list[dict], beginOfLine:int, lists_ano:list[list[dict]]) -> None:
+def anonymize_block_below(text_data:list[dict], beginOfLine:int, list_ano:list[dict]) -> None:
     if(TALK):
-        print('|  begin of line below : ' + str(boxes[beginOfLine]))
+        print('|  begin of line below : ' + str(text_data[beginOfLine]))
 
     index_current_box = beginOfLine
-    while isNotAtSameMarginBelow(boxes[beginOfLine], boxes[index_current_box + 1]):
+    while isNotAtSameMarginBelow(text_data[beginOfLine], text_data[index_current_box + 1]):
         if(TALK):
-            print('|  |  test below : ' + str(boxes[index_current_box]))
+            print('|  |  test below : ' + str(text_data[index_current_box]))
 
         index_current_box += 1
 
     if(TALK):
-        print('|  |  mot prochaine ligne ? ' + str(boxes[index_current_box + 1]))
+        print('|  |  mot prochaine ligne ? ' + str(text_data[index_current_box + 1]))
 
-    if isAtSameMarginBelow(boxes[beginOfLine], boxes[index_current_box + 1]):
+    if isAtSameMarginBelow(text_data[beginOfLine], text_data[index_current_box + 1]):
         if(TALK):
             print("|  |  mot valide")
 
-        anonymize_forward(boxes, index_current_box + 1, lists_ano)
-        anonymize_block_below(img, boxes, index_current_box + 1, lists_ano)
+        anonymize_forward(text_data, index_current_box + 1, list_ano)
+        anonymize_block_below(text_data, index_current_box + 1, list_ano)
 
 
 # recursif : anonymise la ligne d'au dessus si le premier mot est à la même marge que la ligne courante
-def anonymize_block_above(img: np.ndarray, boxes:list[dict], beginOfLine:int, lists_ano:list[list[dict]]) -> None:
+def anonymize_block_above(text_data:list[dict], beginOfLine:int, list_ano:list[dict]) -> None:
     if(TALK):
-        print('|  begin of line above : ' + str(boxes[beginOfLine]))
+        print('|  begin of line above : ' + str(text_data[beginOfLine]))
 
     index_current_box = beginOfLine
-    while isNotAtSameMarginAbove(boxes[beginOfLine], boxes[index_current_box - 1]) and index_current_box > 1:
+    while isNotAtSameMarginAbove(text_data[beginOfLine], text_data[index_current_box - 1]) and index_current_box > 1:
         if(TALK):
-            print('|  |  test above : ' + str(boxes[index_current_box]))
+            print('|  |  test above : ' + str(text_data[index_current_box]))
             
         index_current_box -= 1
     if(TALK):
-        print('|  |  mot precedente ligne ? ' + str(boxes[index_current_box - 1]))
+        print('|  |  mot precedente ligne ? ' + str(text_data[index_current_box - 1]))
 
-    if isAtSameMarginAbove(boxes[beginOfLine], boxes[index_current_box - 1]):
+    if isAtSameMarginAbove(text_data[beginOfLine], text_data[index_current_box - 1]):
         if(TALK):
             print("|  |  ici")
 
-        anonymize_forward(boxes, index_current_box - 1, lists_ano)
-        anonymize_block_above(img, boxes, index_current_box - 1, lists_ano)
+        anonymize_forward(text_data, index_current_box - 1, list_ano)
+        anonymize_block_above(text_data, index_current_box - 1, list_ano)
 
 # Met dans la liste tous les mots qui sont sur la même ligne et devant le mot index_box. Retourne l'index du dernier mot
-def anonymize_forward(boxes:list[dict], index_box: int, lists_ano:list[list[dict]]) -> int:
-    rtn = boxes[index_box]['index']
-    lists_ano.append(boxes[index_box])
-    while check_word_forward(boxes[index_box], boxes[index_box + 1], index_box) \
-            and check_word_aligned(boxes[index_box], boxes[index_box + 1], index_box):
-        box_next = boxes[index_box + 1]
-        lists_ano.append(box_next)
+def anonymize_forward(text_data:list[dict], index_box: int, list_ano:list[dict]) -> int:
+    rtn = text_data[index_box]['index']
+    list_ano.append(text_data[index_box])
+    while check_word_forward(text_data[index_box], text_data[index_box + 1]) \
+            and check_word_aligned(text_data[index_box], text_data[index_box + 1]):
+        box_next = text_data[index_box + 1]
+        list_ano.append(box_next)
         index_box += 1
         rtn = index_box
     return rtn
 
-# Met dans la liste tous les mots qui sont sur la même ligne et derriere le mot index_box. Retourne l'index du premier mot
-def anonymize_backward(boxes:list[dict], index_boxe:int, lists_ano:list[list[dict]]) -> int:
-    rtn = boxes[index_boxe]['index']
-    while check_word_backward(boxes[index_boxe], boxes[index_boxe - 1], index_boxe) \
-            and check_word_aligned(boxes[index_boxe], boxes[index_boxe - 1], index_boxe):
-        box_prev = boxes[index_boxe - 1]
+# Met dans la liste tous les mots qui sont sur la même ligne et derriere le mot index_box. Retourne l'index ²du premier mot
+def anonymize_backward(text_data:list[dict], index_boxe:int, lists_ano:list[list[dict]]) -> int:
+    rtn = text_data[index_boxe]['index']
+    while check_word_backward(text_data[index_boxe], text_data[index_boxe - 1]) \
+            and check_word_aligned(text_data[index_boxe], text_data[index_boxe - 1]):
+        box_prev = text_data[index_boxe - 1]
         lists_ano.append(box_prev)
         index_boxe -= 1
         rtn = index_boxe
