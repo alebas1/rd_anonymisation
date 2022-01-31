@@ -1,20 +1,22 @@
+"""
+Date : 25/01/2022
+Author : Victor Roy
+
+Genere une image anonymisé d'une facture grace à des regex et à de la detection de bloc se basant sur la marge de bloc de texte
+
+"""
 from __future__ import annotations #for typing
 
-from typing import Dict
+from typing import Dict, Tuple
 import numpy as np
 from operator import itemgetter
 
-from anonymize_utils import anonymize_list, extract_text_data, check_word_aligned, check_word_backward, check_word_forward, isAtSameMarginAbove, isAtSameMarginBelow, isInList, isNotAtSameMarginAbove, isNotAtSameMarginBelow, searchRegex
-import regex_config as regex_config
+from finalVersion.anonymize_utils import anonymize_list, extract_text_data, check_word_aligned, check_word_backward, check_word_forward, isAtSameMarginAbove, isAtSameMarginBelow, isInList, isNotAtSameMarginAbove, isNotAtSameMarginBelow, searchRegex
+import finalVersion.regex_config as regex_config
 import re
 
-TALK=False #variable pour afficher ou pas les logs : but de test
-
-def affType(arg):
-    print(type(arg))
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
-def generate_image_invoice(image: np.ndarray,text_data: list[dict]) -> np.ndarray:  #, talkative:bool
+#Genere l'image anonymisé et la retourne ainsi que le nombre de mot anonymisé
+def generate_image_invoice(image: np.ndarray,text_data: list[dict]) -> Tuple[int, np.ndarray]:  #, talkative:bool
 
     valid_ano = check_regex(text_data, image)
 
@@ -23,7 +25,7 @@ def generate_image_invoice(image: np.ndarray,text_data: list[dict]) -> np.ndarra
 #depuis la data renvoyer par tesseract, on récupère seulement les champs qui nous intéresse
 
 """
-depuis la data renvoyer par tesseract, on regarde si le texte colle a des regex d'utilisateur :
+depuis la data renvoyer par tesseract, on regarde si le texte correspond a des regex d'utilisateur :
     Si il y a Monsieur/madame
     Si il y a une adresse (rue, boulevard, impasse, etc...)
 """
@@ -52,8 +54,10 @@ alog :
     ajoute à la list tout le bloc
     trouve le bloc utilisateur et retire les autres des bloc à anonymiser
     anonymise tous les mots dans les blocs finaux
+
+Retourn le nombre de mot anonymisé ainsi que l'image anonymisé.
 """
-def anonymize_text(image: np.ndarray, ano_boxes:list[dict], text_data:list[dict])-> np.ndarray:
+def anonymize_text(image: np.ndarray, ano_boxes:list[dict], text_data:list[dict])-> Tuple[int, np.ndarray]:
 
     cpImg = image.copy() 
     
@@ -72,14 +76,10 @@ def anonymize_text(image: np.ndarray, ano_boxes:list[dict], text_data:list[dict]
     ]
 
     for box_ano in ano_boxes:
-        if(TALK):
-            print("|--------------------------------------------------------\npremier mot : " + str(text_data[box_ano['index']]))
+    
         isIn = isInList(lists_ano,box_ano)
 
-        if (isIn):
-            if(TALK):
-                print("| le mot à déjà été traité : " + str(isIn))
-        else:
+        if (not isIn):
 
             lists_ano.append([])
 
@@ -94,17 +94,16 @@ def anonymize_text(image: np.ndarray, ano_boxes:list[dict], text_data:list[dict]
             beginOfLine = anonymize_backward(text_data, index_box_ano, current_list_ano)
 
             anonymize_block_below(text_data, beginOfLine, current_list_ano)
-            if(TALK):
-                print('| ')
+
             anonymize_block_above(text_data, beginOfLine, current_list_ano)
 
     lists_ano = lists_ano[1:] #pour enlever la première list avec une list de 1 dict vide
 
     checkBlock(lists_ano)
 
-    anonymize_list(lists_ano, cpImg)
+    nb_ano_word = anonymize_list(lists_ano,cpImg)
 
-    return cpImg
+    return (nb_ano_word, cpImg)
 
 #enleve des list la list qui ne sont pas des blocs utilisateur
 def checkBlock(lists_ano:list[list[dict]]) -> None:
@@ -122,22 +121,13 @@ def checkBlock(lists_ano:list[list[dict]]) -> None:
 
 # recursif : anonymise la ligne d'en dessous si le premier mot est à la même marge que la ligne courante
 def anonymize_block_below(text_data:list[dict], beginOfLine:int, list_ano:list[dict]) -> None:
-    if(TALK):
-        print('|  begin of line below : ' + str(text_data[beginOfLine]))
 
     index_current_box = beginOfLine
     while isNotAtSameMarginBelow(text_data[beginOfLine], text_data[index_current_box + 1]):
-        if(TALK):
-            print('|  |  test below : ' + str(text_data[index_current_box]))
 
         index_current_box += 1
 
-    if(TALK):
-        print('|  |  mot prochaine ligne ? ' + str(text_data[index_current_box + 1]))
-
     if isAtSameMarginBelow(text_data[beginOfLine], text_data[index_current_box + 1]):
-        if(TALK):
-            print("|  |  mot valide")
 
         anonymize_forward(text_data, index_current_box + 1, list_ano)
         anonymize_block_below(text_data, index_current_box + 1, list_ano)
@@ -145,21 +135,13 @@ def anonymize_block_below(text_data:list[dict], beginOfLine:int, list_ano:list[d
 
 # recursif : anonymise la ligne d'au dessus si le premier mot est à la même marge que la ligne courante
 def anonymize_block_above(text_data:list[dict], beginOfLine:int, list_ano:list[dict]) -> None:
-    if(TALK):
-        print('|  begin of line above : ' + str(text_data[beginOfLine]))
 
     index_current_box = beginOfLine
     while isNotAtSameMarginAbove(text_data[beginOfLine], text_data[index_current_box - 1]) and index_current_box > 1:
-        if(TALK):
-            print('|  |  test above : ' + str(text_data[index_current_box]))
             
         index_current_box -= 1
-    if(TALK):
-        print('|  |  mot precedente ligne ? ' + str(text_data[index_current_box - 1]))
 
     if isAtSameMarginAbove(text_data[beginOfLine], text_data[index_current_box - 1]):
-        if(TALK):
-            print("|  |  ici")
 
         anonymize_forward(text_data, index_current_box - 1, list_ano)
         anonymize_block_above(text_data, index_current_box - 1, list_ano)

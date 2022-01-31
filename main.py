@@ -5,10 +5,10 @@ import os
 import cv2
 import pytesseract
 
-from rdDetectBlock import generate_image_invoice
-from rdAnoControleTechnique import generate_image_CT 
-from anonymize_utils import extract_text_data, searchRegex
-import regex_config as regex_config
+from anoInvoice import generate_image_invoice
+from anoControleTechnique import generate_image_CT 
+from finalVersion.anonymize_utils import extract_text_data, searchRegex
+import finalVersion.regex_config as regex_config
 
 """
     Retourne le int correspondant à 
@@ -37,7 +37,7 @@ avec l'image original plus l'image anonymisé
 if __name__ == '__main__':
 
     # setting up result path
-    RESULT_PATH = './resultatVF/'
+    RESULT_PATH = './rdResultat/'
 
     startParam=1
 
@@ -60,9 +60,9 @@ if __name__ == '__main__':
 
         if(is_CT_or_invoice(image,text_data)):
             print("CT")
-            cv2.imwrite(RESULT_PATH + file_name + '_2ano.jpg', generate_image_CT(image,text_data))
+            cv2.imwrite(RESULT_PATH + file_name + '_2ano.jpg', generate_image_CT(image,text_data)[1])
         else : 
             print("facture")
-            cv2.imwrite(RESULT_PATH + file_name + '_2ano.jpg', generate_image_invoice(image,text_data))
+            cv2.imwrite(RESULT_PATH + file_name + '_2ano.jpg', generate_image_invoice(image,text_data)[1])
 
         print("================================================================================")

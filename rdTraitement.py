@@ -45,11 +45,11 @@ if __name__ == '__main__':
         image = cv2.imread(sys.argv[i],0)
         file_name = os.path.basename(sys.argv[i])[:-4]
 
-        print(sys.argv[len(sys.argv)-1])
+        #print(sys.argv[len(sys.argv)-1])
         
         imgHistEqua = cv2.equalizeHist(image.copy())
 
-        cv2.imwrite(RESULT_PATH  + file_name + 'testfjnzjdzjkdnzdjndjzdnjzndzjknd.jpg', image)
+        cv2.imwrite(RESULT_PATH  + file_name + '_tested.jpg', image)
 
         th = getThreshold(imgHistEqua)
         print(th)

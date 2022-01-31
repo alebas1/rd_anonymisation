@@ -1,15 +1,23 @@
+"""
+Date : 25/01/2022
+Author : Victor Roy
+
+Genere une image anonymisé d'un controle technique grace à des regex et à de la detection de bloc se basant sur la marge de bloc de texte
+
+"""
 from __future__ import annotations #for typing
 
 import sys
-from typing import Dict
+from typing import Dict, Tuple
 import cv2
 import numpy as np
 
 import os
 
-from anonymize_utils import anonymize_list, extract_text_data, isInList, searchRegex
+from finalVersion.anonymize_utils import anonymize_list, extract_text_data, isInList, searchRegex
 
-def generate_image_CT(image: np.ndarray,text_data: list[dict]) -> np.ndarray: 
+#Genere l'image anonymisé et la retourne ainsi que le nombre de mot anonymisé
+def generate_image_CT(image: np.ndarray,text_data: list[dict]) -> Tuple[int, np.ndarray]: 
 
     return anonymize_text(image,text_data)
 
@@ -23,8 +31,10 @@ def generate_image_CT(image: np.ndarray,text_data: list[dict]) -> np.ndarray:
         Apres 2018 : il n'y a plus que l'encart garagiste. Bloc d'apres commence par "identification du véhicule"
 
         Si le bloc d'apres est celui d'apres 2018. Le traitement s'arrête car l'anonymisation est fini
+
+        Retourne le nombre de mot utilisé ainsi que l'image anonymisé
 """
-def anonymize_text(image: np.ndarray, text_data:list[dict])-> np.ndarray:
+def anonymize_text(image: np.ndarray, text_data:list[dict])-> Tuple[int, np.ndarray]:
     cpImg=image.copy()
     #Ajoute une première list avec un dict vide, sinon le dict n'est pas initialisé correctement et on ne peut pas faire le premier check en regardant les bonnes keys
     lists_ano = [
@@ -56,9 +66,9 @@ def anonymize_text(image: np.ndarray, text_data:list[dict])-> np.ndarray:
 
     lists_ano = lists_ano[1:]
 
-    anonymize_list(lists_ano,cpImg)
+    nb_ano_word = anonymize_list(lists_ano,cpImg)
 
-    return cpImg
+    return (nb_ano_word, cpImg)
 
 #anonymize le bloc constructeur en se basant sur les premiers mots du bloc suivant. Retourne vraie si le bloc suivant correspond à apres 2018
 def anonymize_controleur_block(text_data:list[dict], box:dict, list_ano:list[dict]) -> bool:
@@ -85,25 +95,3 @@ def anonymize_client_block(text_data:list[dict], box:dict, list_ano:list[dict]) 
     while(not searchRegex('résultat',text_data[index_current_box]['text'])):
         list_ano.append(text_data[index_current_box])
         index_current_box+=1
-
-
-if __name__ == '__main__':
-
-    # setting up result path
-    RESULT_PATH = './resultatCT/'
-
-    for i in range(1,len(sys.argv)):
-
-        image = cv2.imread(sys.argv[i])
-        file_name = os.path.basename(sys.argv[i])[:-4]
-
-        # rewriting original image
-        cv2.imwrite(RESULT_PATH  + file_name + '_1original_.jpg', image)
-
-        print(file_name)
-
-        #generateImg(image, file_name)
-
-        cv2.imwrite(RESULT_PATH + file_name + '_2ano.jpg', generate_image_CT(image))
-
-        print("================================================================================")
